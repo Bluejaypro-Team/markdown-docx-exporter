@@ -388,11 +388,45 @@ def convert(input_path, output_path, title=None):
 
         # Paragraphs
         elif tag == 'p':
-            p = doc.add_paragraph()
-            p.paragraph_format.space_before = Pt(0)
-            p.paragraph_format.space_after = Pt(6)
-            p.paragraph_format.line_spacing = 1.15
-            process_inline_element(p, element, theme)
+            img_tag = element.find('img')
+            if img_tag:
+                raw_src = img_tag.get('src', '')
+                src = raw_src.replace('file:///', '').replace('file://', '')
+                if not os.path.isabs(src):
+                    src = os.path.normpath(os.path.join(os.path.dirname(input_path), src))
+                if os.path.exists(src):
+                    p = doc.add_paragraph()
+                    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    p.paragraph_format.space_before = Pt(8)
+                    p.paragraph_format.space_after = Pt(4)
+                    run = p.add_run()
+                    try:
+                        run.add_picture(src, width=Inches(6.0))
+                    except Exception as img_err:
+                        print(f"Warning: Could not insert image {src}: {img_err}")
+                    alt = img_tag.get('alt')
+                    if alt:
+                        cp = doc.add_paragraph()
+                        cp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        cp.paragraph_format.space_before = Pt(0)
+                        cp.paragraph_format.space_after = Pt(8)
+                        crun = cp.add_run(f"Figure: {alt}")
+                        crun.font.name = 'Segoe UI'
+                        crun.font.size = Pt(8.5)
+                        crun.font.italic = True
+                        crun.font.color.rgb = theme["header_fg"]
+                else:
+                    p = doc.add_paragraph()
+                    p.paragraph_format.space_before = Pt(0)
+                    p.paragraph_format.space_after = Pt(6)
+                    p.paragraph_format.line_spacing = 1.15
+                    process_inline_element(p, element, theme)
+            else:
+                p = doc.add_paragraph()
+                p.paragraph_format.space_before = Pt(0)
+                p.paragraph_format.space_after = Pt(6)
+                p.paragraph_format.line_spacing = 1.15
+                process_inline_element(p, element, theme)
 
         # Blockquotes
         elif tag == 'blockquote':
